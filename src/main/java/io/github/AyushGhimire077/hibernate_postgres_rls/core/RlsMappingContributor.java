@@ -2,8 +2,8 @@ package io.github.AyushGhimire077.hibernate_postgres_rls.core;
 
 import io.github.AyushGhimire077.hibernate_postgres_rls.annotation.RlsProtected;
 import io.github.AyushGhimire077.hibernate_postgres_rls.annotation.RlsPolicy;
-import io.github.AyushGhimire077.hibernate_postgres_rls.config.RlsProperties;
-import io.github.AyushGhimire077.hibernate_postgres_rls.config.RlsRuntimeConfig;
+
+import org.hibernate.engine.config.spi.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.hibernate.boot.ResourceStreamLocator;
@@ -24,10 +24,18 @@ public class RlsMappingContributor implements AdditionalMappingContributor {
 
         log.info(">>> RLS Contributor: Initialising RLS Mapping Contributor");
 
-        RlsProperties props = RlsRuntimeConfig.get();
+        var settings = context.getBootstrapContext().getServiceRegistry()
+                .getService(ConfigurationService.class)
+                .getSettings();
+        Object enabledProp = settings.getOrDefault("spring.rls.enabled",
+                settings.get("spring.jpa.properties.spring.rls.enabled"));
 
-        if (props == null || !props.isEnabled()) {
-            log.info(">>> RLS Contributor: RLS disabled, skipping contributor");
+        log.info(">>> RLS Contributor: RLS enabled property value: {}", enabledProp);
+
+        boolean isEnabled = "true".equals(String.valueOf(enabledProp));
+
+        if (!isEnabled) {
+            log.info(">>> RLS Contributor: RLS disabled in properties, skipping");
             return;
         }
 

@@ -27,6 +27,7 @@ public class PostgreSqlRlsUserManager implements RlsUserManager {
     @Override
     @Transactional
     public void createTenant(String username, String password, String schema, boolean grantUsage) {
+        log.info(">>> RLS Manager: Creating role '{}' for schema '{}'", username, schema);
         String createRoleSql = String.format(
                 "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '%s') " +
                         "THEN CREATE ROLE \"%s\" WITH LOGIN PASSWORD '%s'; END IF; END $$",
