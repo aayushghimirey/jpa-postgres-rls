@@ -79,4 +79,20 @@ public class PostgreSqlRlsUserManager implements RlsUserManager {
         jdbcTemplate.execute(String.format("DROP ROLE IF EXISTS \"%s\"", username));
         log.info(">>> RLS Manager: Dropped role {}", username);
     }
+
+    @Override
+    public void setActiveRole(String username) {
+
+        String checkRoleSql = "SELECT count(*) FROM pg_roles WHERE rolname = ?";
+        Integer count = jdbcTemplate.queryForObject(checkRoleSql, Integer.class, username);
+
+        if (count != null && count > 0) {
+            log.info(">>> RLS Manager: Setting active role to '{}'", username);
+            jdbcTemplate.execute(String.format("SET ROLE \"%s\"", username));
+        } else {
+            log.warn(">>> RLS Manager: Role '{}' does not exist. Skipping SET ROLE.", username);
+        }
+    }
+
+
 }

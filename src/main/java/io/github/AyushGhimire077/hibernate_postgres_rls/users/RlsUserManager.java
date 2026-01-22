@@ -19,6 +19,9 @@ public interface RlsUserManager {
 
     void dropTenant(String username);
 
+
+    void setActiveRole(String username);
+
     enum RlsPermission {
         SELECT, INSERT, UPDATE, DELETE, REFERENCES, TRIGGER
     }
