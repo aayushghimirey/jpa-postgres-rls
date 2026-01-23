@@ -15,12 +15,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.github.AyushGhimire077.hibernate_postgres_rls.enums;
+package io.github.AyushGhimire077.hibernate_postgres_rls.exception;
 
-public enum PolicyType {
-    ALL,
-    SELECT,
-    INSERT,
-    UPDATE,
-    DELETE
+/**
+ * Exception thrown when there is a security-related issue in RLS.
+ * <p>
+ * This includes SQL injection attempts, invalid context values,
+ * or other security violations.
+ * </p>
+ *
+ * @author Aayush Ghimire
+ */
+public class RlsSecurityException extends RlsException {
+
+    public RlsSecurityException(String message) {
+        super(message);
+    }
+
+    public RlsSecurityException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

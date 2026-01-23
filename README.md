@@ -1,88 +1,128 @@
-# Postgres Hibernate RLS
+# Hibernate Postgres RLS
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Java CI](https://github.com/AyushGhimire077/hibernate-postgres-rls/actions/workflows/maven.yml/badge.svg)](https://github.com/AyushGhimire077/hibernate-postgres-rls/actions)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/AyushGhimire077/hibernate-postgres-rls)
+[![Hibernate](https://img.shields.io/badge/Hibernate-6.x-orange.svg)](https://hibernate.org/)
+[![Postgres](https://img.shields.io/badge/PostgreSQL-12+-blue.svg)](https://www.postgresql.org/)
 
-A robust Spring Boot library that seamlessly integrates **PostgreSQL Row Level Security (RLS)** with **Hibernate**. Secure your multi-tenant data at the database level using simple annotations, preventing data leakage by design.
+Automated PostgreSQL **Row Level Security (RLS)** for Hibernate entities via annotations. Secure your multi-tenant or
+user-partitioned data with zero boilerplate.
 
-## Features
+## 🚀 Features
 
-- **Annotation-based Security**: Protect entities with `@RowLevelSecurity` and define rules with `@RlsRule`.
-- **Automatic Policy Management**: policies are created, updated, and managed automatically during application startup.
-- **Connection Pool Safe**: Built-in `RlsFilter` ensures session keys are cleared between requests, preventing leakage in connection pooling scenarios.
-- **Spring Boot Auto-configuration**: Zero boilerplate setup. Just add the dependency and properties.
+- **Declarative RLS**: Use `@RowLevelSecurity` and `@RlsRule` directly on your JPA entities.
+- **Repeatable Rules**: Support for multiple RLS policies per table.
+- **Security First**: Built-in SQL identifier validation and quoting to prevent SQL injection.
+- **Thread-Local Context**: Manage RLS session variables (like `tenant_id`) safely across requests.
+- **Transactional Integration**: Automatically applies RLS context before executing `@Transactional` methods.
+- **Schema Automation**: Automatically generates `ENABLE ROW LEVEL SECURITY` and `CREATE POLICY` statements during
+  Hibernate schema export/update.
 
-## Installation
+## 🛠 Installation
 
 Add the dependency to your `pom.xml`:
 
 ```xml
+
 <dependency>
     <groupId>io.github.AyushGhimire077</groupId>
     <artifactId>hibernate-postgres-rls</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.7.1</version>
 </dependency>
 ```
 
-## Configuration
+## 📖 Usage
 
-Configure the library in your `application.yml`:
+### 1. Annotate your Entities
 
-```yaml
-spring:
-  rls:
-    enabled: true
-    mode: update # Options: create, update, none
-```
-
-## Usage
-
-### 1. Annotate your Entity
-
-Mark the entities you want to protect. The library will automatically creating the Postgres Policy for you.
+Mark your entity for RLS and define your policies:
 
 ```java
-import io.github.AyushGhimire077.hibernate_postgres_rls.annotation.RowLevelSecurity;
-import io.github.AyushGhimire077.hibernate_postgres_rls.annotation.RlsRule;
-import io.github.AyushGhimire077.hibernate_postgres_rls.enums.PolicyType;
-import jakarta.persistence.Entity;
 
 @Entity
-@RowLevelSecurity(force = true) // 'force = true' enforces RLS even for table owners
+@Table(name = "user_documents")
+@RowLevelSecurity(force = true) // 'force' ensures RLS applies even to the table owner
 @RlsRule(
-    column = "tenant_id",       // The database column to filter by
-    sessionKey = "app.tenant",  // The Postgres session variable to check (current_setting('app.tenant'))
-    policyType = PolicyType.ALL // Operation to apply logical (ALL, SELECT, UPDATE, etc.)
+        name = "tenant_isolation",
+        policyType = PolicyType.ALL,
+        using = "tenant_id = current_setting('app.tenant_id', true)",
+        withCheck = "tenant_id = current_setting('app.tenant_id', true)"
 )
-public class Product {
-    // ...
+public class Document {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+
+    @Column(name = "tenant_id")
+    private String tenantId;
 }
 ```
 
 ### 2. Set the Context
 
-In your application code (e.g., in a filter, interceptor, or service), set the current tenant context. The library's `RlsFilter` safely manages the lifecycle of this context for web requests.
+In your service or web layer, set the RLS context:
 
 ```java
-import io.github.AyushGhimire077.hibernate_postgres_rls.aspect.ClientContext;
 
-// ... inside your authentication flow
-String currentTenantId = currentUser.getTenantId();
-ClientContext.set("app.tenant", currentTenantId);
+@Service
+public class DocumentService {
+
+    @Transactional
+    public void createDocument(String title) {
+        // This will be automatically applied as 'SET app.tenant_id = 'my-tenant-id''
+        // before the database operations in this method.
+        ClientContext.put("tenant_id", "my-tenant-id");
+
+        documentRepository.save(new Document(title, "my-tenant-id"));
+    }
+}
 ```
 
-For standard web applications, the `RlsFilter` will automatically ensure that this context doesn't leak to subsequent requests on the same thread.
+### 3. Web Integration
 
-## How it Execution Works
+For Spring Boot applications, the `RlsFilter` can automatically extract tenant IDs from headers:
 
-1. **Schema Generation**: `RlsSchemaContributor` scans for `@RowLevelSecurity` entities and injects the necessary `CREATE POLICY` SQL statements during the Hibernate schema update phase.
-2. **Query Interception**: `RlsQueryInterceptor` intercepts every SQL query. Before the query executes, it injects a `SET "app.tenant" = 'value';` command into the transaction, ensuring Postgres uses the correct security context.
-3. **Safety**: `RlsFilter` cleans up the `ClientContext` after every request.
+```properties
+# application.properties
+spring.rls.enabled=true
+spring.rls.mode=ENFORCE
+```
 
-## Contributing
+Add a custom filter or use the provided `RlsFilter` by passing headers like `X-Tenant-Id`.
 
-Contributions are welcome! Please open an issue or submit a pull request.
+## 🛡 Security
 
-## License
+This library takes security seriously:
 
-This project is licensed under the Apache 2.0 License.
+- **Identifier Validation**: All table names, policy names, and session keys are validated against a strict whitelist.
+- **SQL Quoting**: Dynamic SQL generation uses proper PostgreSQL quoting for identifiers and literals.
+- **Context Isolation**: Uses `ThreadLocal` for session state, with guaranteed cleanup in the web filter to prevent data
+  leakage between requests.
+
+## ⚙️ Configuration
+
+| Property             | Description                                         | Default    |
+|----------------------|-----------------------------------------------------|------------|
+| `spring.rls.enabled` | Enable/Disable RLS support                          | `false`    |
+| `spring.rls.mode`    | `VALIDATE` (check only) or `ENFORCE` (generate DDL) | `VALIDATE` |
+
+## 🧪 Testing
+
+The library comes with a comprehensive test suite (40+ tests).
+
+```bash
+mvn clean test
+```
+
+## 📜 License
+
+Distributed under the GPL-3.0 License. See `LICENSE` for more information.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+# NOTE:
+Many test are generated using AI tools. Please verify their correctness before using them in production.

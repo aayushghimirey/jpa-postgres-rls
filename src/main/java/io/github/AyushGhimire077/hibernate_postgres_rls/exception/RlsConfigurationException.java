@@ -15,12 +15,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.github.AyushGhimire077.hibernate_postgres_rls.enums;
+package io.github.AyushGhimire077.hibernate_postgres_rls.exception;
 
-public enum PolicyType {
-    ALL,
-    SELECT,
-    INSERT,
-    UPDATE,
-    DELETE
+/**
+ * Exception thrown when there is an invalid RLS configuration.
+ * <p>
+ * This includes issues like missing required annotations, invalid property values,
+ * or misconfigured RLS rules.
+ * </p>
+ *
+ * @author Aayush Ghimire
+ */
+public class RlsConfigurationException extends RlsException {
+
+    public RlsConfigurationException(String message) {
+        super(message);
+    }
+
+    public RlsConfigurationException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

@@ -15,12 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.github.AyushGhimire077.hibernate_postgres_rls.enums;
+package io.github.AyushGhimire077.hibernate_postgres_rls;
 
-public enum PolicyType {
-    ALL,
-    SELECT,
-    INSERT,
-    UPDATE,
-    DELETE
+
+public class HibernatePostgresRlsApplication {
+
+    public static void main(String[] args) {
+
+
+    }
+
+
 }

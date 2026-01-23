@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package io.github.AyushGhimire077.hibernate_postgres_rls.annotation;
 
 import java.lang.annotation.ElementType;
@@ -22,42 +21,37 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-
 /**
- * Enables Row Level Security (RLS) for a JPA entity.
+ * Container annotation for multiple {@link RlsRule} annotations.
  * <p>
- * This annotation serves as the primary marker for the library to scan and
- * generate the necessary {@code ALTER TABLE ... ENABLE ROW LEVEL SECURITY}
- * DDL statements during schema generation.
- * </p>
- * <p>
- * By default, RLS is enabled without forcing it. Setting {@code force = true}
- * will generate the DDL statement with the {@code FORCE} option, ensuring
- * that RLS is applied even if it was previously disabled on the table.
+ * This annotation is automatically used when multiple {@code @RlsRule}
+ * annotations are applied to the same entity.
  * </p>
  * <h3>Example Usage:</h3>
  * <pre>{@code
- * @RowLevelSecurity(force = true)
- * @RlsRule(using = "tenant_id = current_setting('app.tenant_id')")
  * @Entity
- * public class Staff { ... }
+ * @RowLevelSecurity
+ * @RlsRule(
+ *     name = "tenant_select_policy",
+ *     policyType = PolicyType.SELECT,
+ *     using = "tenant_id = current_setting('app.tenant_id')::bigint"
+ * )
+ * @RlsRule(
+ *     name = "tenant_modify_policy",
+ *     policyType = PolicyType.UPDATE,
+ *     using = "tenant_id = current_setting('app.tenant_id')::bigint",
+ *     withCheck = "tenant_id = current_setting('app.tenant_id')::bigint"
+ * )
+ * public class Document { ... }
  * }</pre>
  *
  * @author Aayush Ghimire
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RowLevelSecurity {
-
+public @interface RlsRules {
     /**
-     * Indicates whether to force enable RLS on the table.
-     * <p>
-     * If set to {@code true}, the generated DDL will include the {@code FORCE}
-     * option, ensuring that RLS is applied even if it was previously disabled.
-     * </p>
-     * <p>
-     * Default is {@code false}.
-     * </p>
+     * Array of RLS rules to apply to the entity.
      */
-    boolean force() default false;
+    RlsRule[] value();
 }
