@@ -1,18 +1,17 @@
 /*
  * Copyright (C) 2026 Aayush Ghimire
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package io.github.AyushGhimire077.hibernate_postgres_rls.util;
@@ -22,14 +21,7 @@ import io.github.AyushGhimire077.hibernate_postgres_rls.exception.RlsSecurityExc
 import java.util.regex.Pattern;
 
 /**
- * Utility class for validating and quoting SQL identifiers and session variables.
- * <p>
- * This class helps prevent SQL injection by ensuring that all identifiers
- * passed to dynamic DDL or session commands (SET CONFIG) are safe and
- * follow PostgreSQL naming rules.
- * </p>
- *
- * @author Aayush Ghimire
+ * Utility for validating SQL identifiers and session variables to prevent injection.
  */
 public final class SqlIdentifierValidator {
 
@@ -93,6 +85,20 @@ public final class SqlIdentifierValidator {
     }
 
     /**
+     * Validates that the given string is a safe PostgreSQL table name.
+     */
+    public static void validateTable(String tableName) {
+        validateIdentifier(tableName, "Table name");
+    }
+
+    /**
+     * Validates that the given string is a safe PostgreSQL schema name.
+     */
+    public static void validateSchema(String schemaName) {
+        validateIdentifier(schemaName, "Schema name");
+    }
+
+    /**
      * Validates a session key (e.g., 'tenant_id') for use in set_config.
      */
     public static void validateSessionKey(String key) {
@@ -108,5 +114,12 @@ public final class SqlIdentifierValidator {
         if (value == null || !SESSION_VALUE_PATTERN.matcher(value).matches()) {
             throw new RlsSecurityException("Session value contains invalid characters: " + value);
         }
+    }
+
+    /**
+     * Validates a policy name for use in RLS definitions.
+     */
+    public static void validatePolicy(String policyName) {
+        validateIdentifier(policyName, "Policy name");
     }
 }

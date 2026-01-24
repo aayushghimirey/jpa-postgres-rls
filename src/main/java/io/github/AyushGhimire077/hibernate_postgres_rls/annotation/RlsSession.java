@@ -22,10 +22,26 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marker for JPA entities that require RLS validation on startup.
- * <p><b>Primary goal : </b> highlighting entities that are protected by RLS.</p>
+ * Binds a parameter value to a PostgreSQL session variable (e.g. app.tenant_id).
+ * <p> This annotation can be applied to method parameters.
+ * When used in a method parameter, the annotated parameter's value will be set
+ * as the specified PostgreSQL session variable for the duration of the transaction.
+ * </p>
  */
-@Target(ElementType.TYPE)
+@Target({ElementType.PARAMETER, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RowLevelSecurity {
+public @interface RlsSession {
+    /**
+     * The name of the session variable (e.g., "app.tenant_id").
+     *
+     * <b>NOTE:</b>
+     * <p>This values should match the session variable used in the RLS policies.</p>
+     * Eg:
+     * <p> CREAT POLICY * ON *
+     * USING (current_setting(<b>session variable</b>);</p>
+     *
+     */
+    String value();
+
+
 }
