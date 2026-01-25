@@ -13,11 +13,17 @@ import java.util.List;
 
 /**
  * Validates RLS annotations against PostgreSQL database state at startup.
- * Schema is resolved using PostgreSQL search_path.
+ *
+ * <p>
+ * - No schema required in annotations
+ * - Table resolution uses PostgreSQL search_path
+ * - Validation only (no DDL, no mutation)
+ * </p>
  */
 public class StartupValidation {
 
     private static final Logger log = LoggerFactory.getLogger(StartupValidation.class);
+
     private final DataSource dataSource;
 
     public StartupValidation(DataSource dataSource) {
@@ -41,7 +47,9 @@ public class StartupValidation {
         log.info("RLS validation completed successfully");
     }
 
-    // Annotation validation
+    /* =============================
+       Annotation validation
+       ============================= */
 
     private void validateAnnotation(RlsRule rule) {
 
@@ -57,19 +65,21 @@ public class StartupValidation {
             throw new IllegalStateException("RLS rule missing requiredVariable");
         }
 
-        SqlIdentifierValidator.validateTable(rule.table()); // name of table
-        SqlIdentifierValidator.validatePolicy(rule.policy()); // name of policy
-        SqlIdentifierValidator.validateSessionKey(rule.requiredVariable()); // name of session variable
+        SqlIdentifierValidator.validateTable(rule.table());
+        SqlIdentifierValidator.validatePolicy(rule.policy());
+        SqlIdentifierValidator.validateSessionKey(rule.requiredVariable());
     }
 
-    // Database validation
+    /* =============================
+       Database validation
+       ============================= */
 
     private void validateDbState(Connection conn, RlsRule rule) throws Exception {
 
         log.debug("Validating RLS for table '{}'", rule.table());
 
-        // 1️⃣ Resolve table OID using search_path
-        Long tableOid;
+        // 1️⃣ Resolve table OID (SELECT to_regclass('staff'))
+        long tableOid;
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT to_regclass(?)"
         )) {
@@ -86,7 +96,29 @@ public class StartupValidation {
             }
         }
 
-        // 2️⃣ Check RLS enabled
+        // 2️⃣ Log table metadata (OID, relname, relrowsecurity)
+        try (PreparedStatement ps = conn.prepareStatement(
+                """
+                SELECT oid, relname, relrowsecurity
+                FROM pg_class
+                WHERE oid = ?
+                """
+        )) {
+            ps.setLong(1, tableOid);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    log.debug(
+                            "Table resolved → oid={}, name={}, rls={}",
+                            rs.getLong("oid"),
+                            rs.getString("relname"),
+                            rs.getBoolean("relrowsecurity")
+                    );
+                }
+            }
+        }
+
+        // 3️⃣ Enforce RLS enabled
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT relrowsecurity FROM pg_class WHERE oid = ?"
         )) {
@@ -102,28 +134,52 @@ public class StartupValidation {
             }
         }
 
-        // 3️⃣ Validate policy and required variable
+        log.debug("RLS is enabled on table '{}'", rule.table());
+
+        // 4️⃣ Debug: list all policies on the table
         try (PreparedStatement ps = conn.prepareStatement(
                 """
-                        SELECT qual
-                        FROM pg_policies
-                        WHERE tablename = ?
-                          AND polname   = ?
-                        """
+                SELECT policyname, permissive, roles, cmd, qual, with_check
+                FROM pg_policies
+                WHERE tablename = ?
+                """
         )) {
             ps.setString(1, rule.table());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    log.debug(
+                            "Found policy → name={}, cmd={}, qual={}",
+                            rs.getString("policyname"),
+                            rs.getString("cmd"),
+                            rs.getString("qual")
+                    );
+                }
+            }
+        }
+
+        // 5️⃣ Validate specific policy + required variable
+        try (PreparedStatement ps = conn.prepareStatement(
+                """
+                SELECT p.qual
+                FROM pg_policies p
+                JOIN pg_class c ON c.relname = p.tablename
+                WHERE c.oid = ?
+                  AND p.policyname = ?
+                """
+        )) {
+            ps.setLong(1, tableOid);
             ps.setString(2, rule.policy());
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     throw new IllegalStateException(
                             "CRITICAL: RLS policy '" + rule.policy() +
-                                    "' does not exist on table '" +
-                                    rule.table() + "'"
+                                    "' does not exist on table '" + rule.table() + "'"
                     );
                 }
 
-                String qualifier = rs.getString(1);
+                String qualifier = rs.getString("qual");
                 if (qualifier == null || !qualifier.contains(rule.requiredVariable())) {
                     throw new IllegalStateException(
                             "CRITICAL: RLS policy '" + rule.policy() +
@@ -134,6 +190,6 @@ public class StartupValidation {
             }
         }
 
-        log.debug("RLS validated for table '{}'", rule.table());
+        log.debug("RLS validated successfully for table '{}'", rule.table());
     }
 }
