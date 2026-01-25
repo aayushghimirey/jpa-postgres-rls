@@ -82,7 +82,7 @@ public class RlsTransactionalAspect {
         Object[] args = joinPoint.getArgs();
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
 
-        log.info("Transactional annotation found on {}, applying RLS policy with values: {}", method.getName(), args);
+        log.debug("Transactional annotation found on {}, applying RLS policy with values: {}", method.getName(), args);
 
         boolean anyVariableSet = false;
 
@@ -92,7 +92,7 @@ public class RlsTransactionalAspect {
                     String sessionKey = rlsSession.value();
                     Object sessionValue = args[i];
 
-                    log.info("Found @RlsSession on parameter {}: {} = {}", i, sessionKey, sessionValue);
+                    log.debug("Found @RlsSession on parameter {}: {} = {}", i, sessionKey, sessionValue);
 
                     // Set the session variable in RLS context (thread-local)
                     rlsContext.with(sessionKey, sessionValue);

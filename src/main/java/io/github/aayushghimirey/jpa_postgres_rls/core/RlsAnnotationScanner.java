@@ -18,6 +18,7 @@ package io.github.aayushghimirey.jpa_postgres_rls.core;
 
 import io.github.aayushghimirey.jpa_postgres_rls.annotation.RlsRule;
 import io.github.aayushghimirey.jpa_postgres_rls.annotation.RowLevelSecurity;
+import io.github.aayushghimirey.jpa_postgres_rls.exception.RlsConfigurationException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +67,9 @@ public class RlsAnnotationScanner {
                 RlsRule rule = entity.getAnnotation(RlsRule.class);
                 if (rule != null) {
                     rlsRules.add(rule);
+                } else {
+                    throw new RlsConfigurationException("Entity " + entity.getName() + " is annotated with @RowLevelSecurity but does not define an @RlsRule. "
+                    );
                 }
             }
         }
