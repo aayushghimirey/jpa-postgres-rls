@@ -34,7 +34,7 @@ Add the dependency to your `pom.xml`:
 ```xml
 
 <dependency>
-    <groupId>io.github.AyushGhimire077</groupId>
+    <groupId>io.github.aayushghimirey</groupId>
     <artifactId>jpa-postgres-rls</artifactId>
     <version>2.0.0</version>
 </dependency>
