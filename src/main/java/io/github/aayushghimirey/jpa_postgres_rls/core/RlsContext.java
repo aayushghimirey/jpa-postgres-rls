@@ -1,5 +1,6 @@
 package io.github.aayushghimirey.jpa_postgres_rls.core;
 
+import io.github.aayushghimirey.jpa_postgres_rls.exception.RlsException;
 import io.github.aayushghimirey.jpa_postgres_rls.util.SqlIdentifierValidator;
 import io.github.aayushghimirey.jpa_postgres_rls.annotation.RlsSession;
 import io.github.aayushghimirey.jpa_postgres_rls.aspect.RlsTransactionalAspect;
@@ -80,23 +81,25 @@ public class RlsContext {
             String sessionKey = key.contains(".") ? key : "app." + key;
             String valStr = (value == null) ? "" : value.toString();
 
-            log.info("Applying RLS session variable: {} = {}", sessionKey, valStr);
+            log.debug("Applying RLS session variable: {} = {}", sessionKey, valStr);
 
             try {
-                Object execute = jdbcTemplate.execute(String.format("SELECT set_config('%s', ?, true)", sessionKey), (PreparedStatement ps) -> {
-                    ps.setString(1, valStr);
-                    ps.executeQuery();
-                    return null;
-                });
-                if (execute == null) {
-                    log.error("Failed to set RLS variable: {}", sessionKey);
-//                    throw new RuntimeException("RLS session bind failed: " + sessionKey);
-                }
+                String previousValue = jdbcTemplate.queryForObject(
+                        "SELECT set_config(?, ?, true)",
+                        String.class,
+                        sessionKey, valStr
+                );
+
+                log.info("RLS variable {} set, previous value was {}", sessionKey, previousValue);
+
+
             } catch (Exception e) {
                 log.error("Failed to set RLS variable: {}", sessionKey, e);
-                throw new RuntimeException("RLS session bind failed: " + sessionKey, e);
+                throw new RlsException("RLS session bind failed: " + sessionKey, e);
             }
         });
+
+        log.info("Applied {} RLS session variable(s)", vars.size());
 
         // Clear after applying to avoid leaking variables across transactions
         vars.clear();
