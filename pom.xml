@@ -3,12 +3,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.github.AyushGhimire077</groupId>
-    <artifactId>hibernate-postgres-rls</artifactId>
-    <version>2.1.0</version>
-    <name>Hibernate Postgres RLS</name>
-    <description>PostgreSQL Row Level Security (RLS) support for Hibernate entities.</description>
-    <url>https://github.com/AyushGhimire077/hibernate-postgres-rls</url>
+    <groupId>io.github.aayushghimirey</groupId>
+    <artifactId>jpa-postgres-rls</artifactId>
+    <version>2.0.0</version>
+    <name>JPA Postgres RLS</name>
+    <description>
+        JPA library for PostgreSQL Row-Level Security (RLS) with automatic session variable binding and startup policy
+        validation.
+    </description>
+    <url>https://github.com/aayushghimirey/jpa-postgres-rls</url>
 
 
     <licenses>
@@ -21,16 +24,15 @@
 
     <developers>
         <developer>
-            <id>AyushGhimire077</id>
+            <id>aayushghimirey</id>
             <name>Aayush Ghimire</name>
             <email>ayush.ghimire.dev@gmail.com</email>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/AyushGhimire077/hibernate-postgres-rls.git</connection>
-        <developerConnection>scm:git:ssh://github.com:AyushGhimire077/hibernate-postgres-rls.git</developerConnection>
-        <url>https://github.com/AyushGhimire077/hibernate-postgres-rls/tree/main</url>
+        <connection>scm:git:https://github.com/aayushghimirey/jpa-postgres-rls.git</connection>
+        <url>https://github.com/aayushghimirey/jpa-postgres-rls</url>
     </scm>
 
     <properties>
@@ -61,6 +63,7 @@
             <version>3.2.0</version>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
@@ -77,6 +80,14 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
+            <scope>runtime</scope>
+            <optional>true</optional>
         </dependency>
 
 

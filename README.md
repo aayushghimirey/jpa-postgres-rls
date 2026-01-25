@@ -1,29 +1,42 @@
-# Hibernate Postgres RLS
+# JPA Postgres RLS
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/AyushGhimire077/hibernate-postgres-rls)
-[![Hibernate](https://img.shields.io/badge/Hibernate-6.x-orange.svg)](https://hibernate.org/)
-[![Postgres](https://img.shields.io/badge/PostgreSQL-12+-blue.svg)](https://www.postgresql.org/)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/aayushghimirey/jpa-postgres-rls)
+[![JPA](https://img.shields.io/badge/JPA-3.x-orange.svg)](https://jakarta.ee/specifications/persistence/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-blue.svg)](https://www.postgresql.org/)
+[![Java](https://img.shields.io/badge/Java-21-brightgreen.svg)](https://www.oracle.com/java/)
 
-Automated PostgreSQL **Row Level Security (RLS)** for Hibernate. This library validates database security policies and manages transaction-scoped session variables in Spring Boot.
+---
 
-## 🚀 Features
+## Overview
 
-- **Database-First RLS**: Database owns the policies; the library validates expectations.
-- **Fail-Fast Validation**: Verification of RLS and policies on application startup.
-- **Transaction-Scoped Binding**: Bind session variables (like `app.tenant_id`) automatically using `SET LOCAL`.
-- **Annotation Sugar**: Use `@RlsSession` on method parameters for zero-boilerplate binding.
-- **Thread-Safe**: Safe for multi-threaded applications using staged session context.
+**JPA Postgres RLS** is a Java/Spring Boot library that enables **PostgreSQL Row-Level Security (RLS)** for JPA entities.  
+### Key Features
+* **Startup Validation:** Fails fast if DB policies, tables, or required session variables are missing.
+* **Declarative Binding:** Use `@RlsSession` on method parameters to automatically set Postgres variables.
+* **Zero Leakage:** Uses `SET LOCAL` within transactions to ensure variables are cleared after commit/rollback.
+* **Type Safe:** Supports mapping Java objects/Longs directly to Postgres session settings.
 
-## 🛠 Installation
+---
+
+## Installation
+
+Currently, this library must be installed locally.
+
+```bash
+git clone https://github.com/aayushghimirey/jpa-postgres-rls.git
+cd jpa-postgres-rls
+mvn clean install
+```
 
 Add the dependency to your `pom.xml`:
 
 ```xml
+
 <dependency>
     <groupId>io.github.AyushGhimire077</groupId>
-    <artifactId>hibernate-postgres-rls</artifactId>
-    <version>2.1.0</version>
+    <artifactId>jpa-postgres-rls</artifactId>
+    <version>2.0.0</version>
 </dependency>
 ```
 
@@ -34,19 +47,17 @@ Add the dependency to your `pom.xml`:
 Define your RLS expectations:
 
 ```java
+
 @Entity
+@Data
 @RowLevelSecurity
-@RlsRule(
-    table = "documents",
-    policy = "tenant_isolation",
-    requiredVariable = "app.tenant_id"
-)
-public class Document {
+@RlsRule(policy = "staff_isolation_policy", requiredVariable = "app.tenant_id", table = "staff")
+public class Staff {
     @Id
     private Long id;
-    
+
     @Column(name = "tenant_id")
-    private String tenantId;
+    private Long tenantId;
 }
 ```
 
@@ -57,13 +68,14 @@ public class Document {
 Annotate your `@Transactional` method parameters:
 
 ```java
-@Service
-public class DocumentService {
 
-    @Transactional
-    public List<Document> getDocuments(@RlsSession("app.tenant_id") String tenantId) {
+@Service
+public class StaffService {
+
+    @Transactional(readOnly = true)
+    public List<Staff> getStaffs(@RlsSession("app.tenant_id") Long tenantId) {
         // 'app.tenant_id' is automatically set via SET LOCAL for this transaction.
-        return documentRepository.findAll();
+        return staffRepository.findAll();
     }
 }
 ```
@@ -73,11 +85,12 @@ public class DocumentService {
 Inject and use `RlsContext` for more control:
 
 ```java
+
 @Autowired
 private RlsContext rlsContext;
 
 @Transactional
-public void doWork(String tenantId) {
+public void doWork(Long tenantId) {
     rlsContext.with("app.tenant_id", tenantId).apply();
     // ...
 }
@@ -88,19 +101,14 @@ public void doWork(String tenantId) {
 ```properties
 # application.yml
 spring.rls.enabled=true
-
-# Optional: Debugging SQL and session variable binding
-logging.level.org.hibernate.SQL=DEBUG
-logging.level.org.hibernate.orm.jdbc.bind=TRACE
-logging.level.org.springframework.jdbc.core.JdbcTemplate=DEBUG
 ```
 
 ## 🛡 Security & Best Practices
 
 1. **DB Owns Polices**: Create policies via Flyway, Liquibase, or manual SQL:
    ```sql
-   ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
-   CREATE POLICY tenant_isolation ON documents H
+   ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY staff_isolation ON staff TO ALL
    USING (tenant_id = current_setting('app.tenant_id')::bigint);
    ```
 2. **Fail Fast**: If RLS or a policy is missing, the application will not start.
