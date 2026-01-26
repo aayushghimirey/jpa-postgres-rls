@@ -5,7 +5,7 @@
 
     <groupId>io.github.aayushghimirey</groupId>
     <artifactId>jpa-postgres-rls</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
     <name>JPA Postgres RLS</name>
     <description>
         JPA library for PostgreSQL Row-Level Security (RLS) with automatic session variable binding and startup policy
@@ -185,6 +185,37 @@
                     <doclint>none</doclint>
                 </configuration>
             </plugin>
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>true</autoPublish> </configuration>
+            </plugin>
+
         </plugins>
     </build>
 </project>
+
+
+
