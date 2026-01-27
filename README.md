@@ -1,44 +1,47 @@
 # JPA Postgres RLS
 
+
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.aayushghimirey/jpa-postgres-rls)](https://central.sonatype.com/artifact/io.github.aayushghimirey/jpa-postgres-rls)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/aayushghimirey/jpa-postgres-rls)
 [![JPA](https://img.shields.io/badge/JPA-3.x-orange.svg)](https://jakarta.ee/specifications/persistence/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-blue.svg)](https://www.postgresql.org/)
-[![Java](https://img.shields.io/badge/Java-21-brightgreen.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-17%2B-brightgreen.svg)](https://www.oracle.com/java/)
 
+---
 ---
 
 ## Overview
 
-**JPA Postgres RLS** is a Java/Spring Boot library that enables **PostgreSQL Row-Level Security (RLS)** for JPA entities.  
+**JPA Postgres RLS** is a Java / Spring Boot library that integrates **PostgreSQL Row-Level Security (RLS)** with JPA.
+
+It enforces **database-level data isolation** while providing:
+- startup-time validation
+- declarative annotations
+- transaction-scoped session variables
+
 ### Key Features
 * **Startup Validation:** Fails fast if DB policies, tables, or required session variables are missing.
 * **Declarative Binding:** Use `@RlsSession` on method parameters to automatically set Postgres variables.
-* **Zero Leakage:** Uses `SET LOCAL` within transactions to ensure variables are cleared after commit/rollback.
+* **Zero Leakage:** Uses transaction-scoped `set_config` so session variables never leak outside the current transaction.
 * **Type Safe:** Supports mapping Java objects/Longs directly to Postgres session settings.
 
 ---
 
 ## Installation
 
-Currently, this library must be installed locally.
+Available on **Maven Central**.
+
 
 ```bash
-git clone https://github.com/aayushghimirey/jpa-postgres-rls.git
-cd jpa-postgres-rls
-mvn clean install
-```
-
-Add the dependency to your `pom.xml`:
-
-```xml
-
 <dependency>
     <groupId>io.github.aayushghimirey</groupId>
     <artifactId>jpa-postgres-rls</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
 </dependency>
 ```
+
+Add the dependency to your `pom.xml`:
+ 
 
 ## 📖 Usage
 
@@ -74,7 +77,7 @@ public class StaffService {
 
     @Transactional(readOnly = true)
     public List<Staff> getStaffs(@RlsSession("app.tenant_id") Long tenantId) {
-        // 'app.tenant_id' is automatically set via SET LOCAL for this transaction.
+        // 'app.tenant_id' is automatically set via set_config for this transaction.
         return staffRepository.findAll();
     }
 }
@@ -112,7 +115,7 @@ spring.rls.enabled=true
    USING (tenant_id = current_setting('app.tenant_id')::bigint);
    ```
 2. **Fail Fast**: If RLS or a policy is missing, the application will not start.
-3. **Transaction Scoped**: All variables use `SET LOCAL`, automatically cleared on commit/rollback.
+3. **Transaction Scoped**: All variables use `set_config`, automatically cleared on commit/rollback.
 
 ## 📜 License
 
