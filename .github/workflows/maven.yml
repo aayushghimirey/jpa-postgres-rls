@@ -1,14 +1,14 @@
 # name: Java CI with Maven
-#
+
 # on:
 #   push:
 #     branches: [ "master", "main" ]
 #   pull_request:
 #     branches: [ "master", "main" ]
-#
+
 # jobs:
 #   build:
-#
+
 #     runs-on: ubuntu-latest
 #     services:
 #       postgres:
@@ -24,7 +24,7 @@
 #           --health-interval 10s
 #           --health-timeout 5s
 #           --health-retries 5
-#
+
 #     steps:
 #     - uses: actions/checkout@v3
 #     - name: Set up JDK 21
