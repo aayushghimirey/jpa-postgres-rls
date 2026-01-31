@@ -36,7 +36,7 @@ Available on **Maven Central**.
 <dependency>
     <groupId>io.github.aayushghimirey</groupId>
     <artifactId>jpa-postgres-rls</artifactId>
-    <version>2.0.1</version>
+    <version>2.0.2</version>
 </dependency>
 ```
 
@@ -116,6 +116,12 @@ spring.rls.enabled=true
    ```
 2. **Fail Fast**: If RLS or a policy is missing, the application will not start.
 3. **Transaction Scoped**: All variables use `set_config`, automatically cleared on commit/rollback.
+
+
+## Demo Project
+For a complete working example including Docker Compose, Flyway migrations, and multi-tenant RLS configurations, check out the official demo:
+
+https://github.com/aayushghimirey/jpa-postgres-rls-demo.git
 
 ## 📜 License
 
