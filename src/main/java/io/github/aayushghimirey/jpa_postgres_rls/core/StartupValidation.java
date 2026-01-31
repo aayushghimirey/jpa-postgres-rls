@@ -96,75 +96,45 @@ public class StartupValidation {
 
         log.debug("Validating RLS for table '{}'", rule.table());
 
-        // Make sure table exists and get OID
+        // OID using double-cast to ensure a numeric result
         long tableOid;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT to_regclass(?)"
-        )) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT to_regclass(?)::oid::bigint")) {
             ps.setString(1, rule.table());
-
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next() || rs.getObject(1) == null) {
-                    throw new RlsConfigurationException(
-                            "CRITICAL: Table '" + rule.table() +
-                                    "' not found in current search_path"
-                    );
+                    throw new RlsConfigurationException("CRITICAL: Table '" + rule.table() + "' not found.");
                 }
                 tableOid = rs.getLong(1);
             }
         }
 
-
-        // Make sure RLS is enabled on the table with oid
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT relrowsecurity FROM pg_class WHERE oid = ?"
-        )) {
+        //relrowsecurity in pg_class
+        try (PreparedStatement ps = conn.prepareStatement("SELECT relrowsecurity FROM pg_class WHERE oid = ?")) {
             ps.setLong(1, tableOid);
-
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next() || !rs.getBoolean(1)) {
-                    throw new RlsConfigurationException(
-                            "CRITICAL: RLS is not enabled on table '" +
-                                    rule.table() + "'"
-                    );
+                    throw new RlsConfigurationException("CRITICAL: RLS is not enabled on table '" + rule.table() + "'");
                 }
             }
         }
 
-        log.debug("RLS is enabled on table '{}'", rule.table());
-
-
-        // Validate specific policy + required variable
         try (PreparedStatement ps = conn.prepareStatement(
-                """
-                        SELECT p.polqual
-                        FROM pg_policies p
-                        WHERE p.polrelid = ?
-                          AND p.polname = ?;
-                        """
+                "SELECT pg_get_expr(polqual, polrelid) FROM pg_policy WHERE polrelid = ? AND polname = ?"
         )) {
             ps.setLong(1, tableOid);
             ps.setString(2, rule.policy());
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
-                    throw new RlsConfigurationException(
-                            "CRITICAL: RLS policy '" + rule.policy() +
-                                    "' does not exist on table '" + rule.table() + "'"
-                    );
+                    throw new RlsConfigurationException("CRITICAL: Policy '" + rule.policy() + "' not found.");
                 }
 
-                String qualifier = rs.getString("polqual");  // fix here
+                String qualifier = rs.getString(1);
                 if (qualifier == null || !qualifier.contains(rule.requiredVariable())) {
-                    throw new RlsConfigurationException(
-                            "CRITICAL: RLS policy '" + rule.policy() +
-                                    "' does not reference required variable '" +
-                                    rule.requiredVariable() + "'"
-                    );
+                    throw new RlsConfigurationException("CRITICAL: Policy does not reference '" + rule.requiredVariable() + "'");
                 }
             }
         }
-
         log.debug("RLS validated successfully for table '{}'", rule.table());
     }
 

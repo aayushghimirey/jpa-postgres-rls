@@ -5,7 +5,7 @@
 
     <groupId>io.github.aayushghimirey</groupId>
     <artifactId>jpa-postgres-rls</artifactId>
-    <version>2.0.1</version>
+    <version>2.0.2</version>
     <name>JPA Postgres RLS</name>
     <description>
         JPA library for PostgreSQL Row-Level Security (RLS) with automatic session variable binding and startup policy
